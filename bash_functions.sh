@@ -68,7 +68,7 @@ send_chunked_data() {
 
     for (( i=0; i<len; i+=chunk_size )); do
         local chunk="${b64:$i:$chunk_size}"
-        local hash
+        # local hash
         hash=$(echo -n "$chunk" | sha256sum | cut -c1-8 | tr '[:lower:]' '[:upper:]')
         
         # Determine what signal we expect back
@@ -76,7 +76,7 @@ send_chunked_data() {
         [[ $((i + chunk_size)) -ge $len ]] && expected="FIN"
 
         echo -n "PSH|$i|$hash|$chunk" | xclip -selection clipboard
-        echo "Sent $i. Waiting for $expected..."
+        echo "Sent $i/$len. Waiting for $expected..."
 
         # Wait for PowerShell to echo the signal
         until [[ "$(xclip -selection clipboard -o 2>/dev/null)" == "$expected" ]]; do
