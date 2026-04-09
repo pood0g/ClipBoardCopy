@@ -54,7 +54,11 @@ function Send-ChunkedData {
 }
 
 function Receive-ChunkedData {
-    param([Parameter(Mandatory = $true)][string]$OutFile)
+    param(
+        [Parameter(Mandatory = $true)][string]$OutFile,
+        [int]$ChunkSize = 100000
+    )
+
 
     $lastIdx = -1
     Set-Clipboard "BEGIN"
@@ -62,6 +66,7 @@ function Receive-ChunkedData {
     Write-Host "Listening for PSH packets..." -ForegroundColor Yellow
 
     while ($true) {
+        Start-Sleep -Milliseconds 300
         $raw = Get-Clipboard
         if ($null -eq $raw -or $raw.Length -lt 3) { continue }
 
@@ -78,7 +83,7 @@ function Receive-ChunkedData {
                         $fileData += $data
                         $lastIdx = $idx
                         # Signal back: Is it the final small chunk?
-                        $sig = if ($data.Length -lt 100000) { "FIN" } else { "ACK" }
+                        $sig = if ($data.Length -lt $ChunkSize) { "FIN" } else { "ACK" }
                         Set-Clipboard -Value $sig
                         Write-Host "[OK] $idx -> $sig" -ForegroundColor Green
                         if ($sig -eq "FIN") { break }
@@ -86,7 +91,6 @@ function Receive-ChunkedData {
                 }
             }
         }
-        Start-Sleep -Milliseconds 300
     }
     $fileBytes = [System.Convert]::FromBase64String($fileData)
     Set-Content -Path $OutFile -Value $fileBytes -Encoding Byte
